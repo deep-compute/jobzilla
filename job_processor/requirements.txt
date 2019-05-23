@@ -18,7 +18,7 @@ python-redis-lock==3.2.0
 pytz==2018.3
 redis==2.10.6
 repoze.lru==0.7
-requests==2.18.4
+requests==2.20.0
 six==1.11.0
 structlog==18.1.0
 urllib3==1.24.2
