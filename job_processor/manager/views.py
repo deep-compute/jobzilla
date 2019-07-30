@@ -17,15 +17,15 @@ from .validations import validate_docker_credentials, validate_docker_image
 J = Job.objects
 W = Worker.objects
 
-JCREATED = 'created'
-JSUBMITTED = 'submitted'
-JPAUSED = 'paused'
-JRESUMED = 'resumed'
-JCANCELLED = 'cancelled'
-JCOMPLETED = 'completed'
+JCREATED = "created"
+JSUBMITTED = "submitted"
+JPAUSED = "paused"
+JRESUMED = "resumed"
+JCANCELLED = "cancelled"
+JCOMPLETED = "completed"
 
-WREADY = 'ready'
-WBUSY = 'busy'
+WREADY = "ready"
+WBUSY = "busy"
 
 # FIXME: to be part of local_setting.py
 REDIS_PASSWORD = settings.REDIS_PASSWORD
@@ -33,15 +33,22 @@ REDIS_PORT = settings.REDIS_PORT
 REDIS_HOST = settings.REDIS_HOST
 REDIS_DB = settings.REDIS_DB
 
-LOG = init_logger(fmt=None, fpath=None, pre_hooks=[], post_hooks=[], metric_grouping_interval=1, level='warning')
+LOG = init_logger(
+    fmt=None,
+    fpath=None,
+    pre_hooks=[],
+    post_hooks=[],
+    metric_grouping_interval=1,
+    level="warning",
+)
+
 
 class JobAPI:
-
     def __init__(self, log):
         self.master = MasterAPI(log=log)
         self.log = log
 
-    def submit(self, name: str, params: dict, preserve: bool=False)-> int:
+    def submit(self, name: str, params: dict, preserve: bool = False) -> int:
         """
         For receiving a job request
 
@@ -63,15 +70,16 @@ class JobAPI:
             validate_docker_credentials(credentials)
             validate_docker_image(image)
 
-        j = J.create(name=name, state=JCREATED, preserve=preserve,
-                parameters=json.dumps(params))
+        j = J.create(
+            name=name, state=JCREATED, preserve=preserve, parameters=json.dumps(params)
+        )
 
         j.validated = True
         j.save()
 
         return j.id
 
-    def info(self, req: Request, job_id: int)-> dict:
+    def info(self, req: Request, job_id: int) -> dict:
         """
         Get the information about the job which is submitted
 
@@ -88,7 +96,7 @@ class JobAPI:
         if j:
             return as_dict(j)
 
-    def get_progress(self, job_id: int)-> int:
+    def get_progress(self, job_id: int) -> int:
         """
         Get the progress of a executing job
 
@@ -99,11 +107,11 @@ class JobAPI:
         :return type: int
         """
 
-        progress = J.filter(id=job_id).values().first()['progress']
+        progress = J.filter(id=job_id).values().first()["progress"]
 
         return progress
 
-    def pause(self, job_id: int)-> None:
+    def pause(self, job_id: int) -> None:
         """
         Pause job's execution
 
@@ -113,7 +121,7 @@ class JobAPI:
 
         self.master._change_job_state(job_id, JPAUSED)
 
-    def resume(self, job_id: int)-> None:
+    def resume(self, job_id: int) -> None:
         """
         Resume job's execution
 
@@ -123,7 +131,7 @@ class JobAPI:
 
         self.master._change_job_state(job_id, JRESUMED)
 
-    def cancel(self, job_id: int)-> None:
+    def cancel(self, job_id: int) -> None:
         """
         Cancel job's execution
 
@@ -132,11 +140,13 @@ class JobAPI:
         """
         self.master._change_job_state(job_id, JCANCELLED)
 
-class MasterAPI:
 
+class MasterAPI:
     def __init__(self, log):
         self.log = log
-        self.redis_conn = StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)
+        self.redis_conn = StrictRedis(
+            host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD
+        )
 
     def _change_job_state(self, job_id, state):
         """
@@ -159,7 +169,7 @@ class MasterAPI:
 
         j.save()
 
-    def get_job_state(self, job_id: int)-> str:
+    def get_job_state(self, job_id: int) -> str:
         """
         Responsible for giving job state
 
@@ -176,7 +186,7 @@ class MasterAPI:
             return job_state
 
         except:
-            self.log.warn('State does not exists of given job id')
+            self.log.warn("State does not exists of given job id")
 
     def _register(self, name):
         try:
@@ -184,9 +194,9 @@ class MasterAPI:
             w.save()
 
         except django.db.utils.IntegrityError:
-            self.log.warn('Worker Already Registered')
+            self.log.warn("Worker Already Registered")
 
-    def get_job(self, name: str)-> dict:
+    def get_job(self, name: str) -> dict:
         """
         If job is in the queue, a job will be allocated to a executor machine
 
@@ -200,13 +210,13 @@ class MasterAPI:
             self._register(name)
             j = J.filter(state=JCREATED).filter(validated=True).values().first()
             if j:
-                W.filter(name=name).update(job_id=j['id'])
+                W.filter(name=name).update(job_id=j["id"])
 
-                J.filter(id=j['id']).update(state=JSUBMITTED)
+                J.filter(id=j["id"]).update(state=JSUBMITTED)
 
                 return as_dict(j)
 
-    def update_state(self, job_id: int, state: str)-> None:
+    def update_state(self, job_id: int, state: str) -> None:
         """
         Will update the state of the executor machine
 
@@ -220,9 +230,11 @@ class MasterAPI:
 
         if state == WREADY:
             try:
-                job_state = J.filter(id=job_id).filter(state=JCANCELLED).values().first()
+                job_state = (
+                    J.filter(id=job_id).filter(state=JCANCELLED).values().first()
+                )
             except:
-                self.log.warn('JOB STATE IS NONE', job_state=job_state)
+                self.log.warn("JOB STATE IS NONE", job_state=job_state)
 
             if job_state:
                 W.filter(job_id=job_id).update(job_id=None)
@@ -230,7 +242,7 @@ class MasterAPI:
                 J.filter(id=job_id).update(state=JCOMPLETED)
                 W.filter(job_id=job_id).update(job_id=None)
 
-    def update_progress(self, job_id: int, progress: str)-> None:
+    def update_progress(self, job_id: int, progress: str) -> None:
         """
         Will update the job progress in db
 
@@ -243,6 +255,7 @@ class MasterAPI:
 
         j = J.filter(id=job_id).update(progress=progress)
 
+
 api = API()
-api.register(JobAPI(log=LOG), 'v1', 'job')
-api.register(MasterAPI(log=LOG), 'v1', 'worker')
+api.register(JobAPI(log=LOG), "v1", "job")
+api.register(MasterAPI(log=LOG), "v1", "worker")
