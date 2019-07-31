@@ -6,18 +6,16 @@ from django.core.serializers.json import DjangoJSONEncoder
 from .exception import NoEntryExistsError
 
 JOB_STATE_CHOICES = (
-                        ('created', 'created'),
-                        ('submitted', 'submitted'),
-                        ('completed', 'completed'),
-                        ('paused', 'paused'),
-                        ('cancelled', 'cancelled'),
-                        ('resumed', 'resumed'),
-                    )
+    ("created", "created"),
+    ("submitted", "submitted"),
+    ("completed", "completed"),
+    ("paused", "paused"),
+    ("cancelled", "cancelled"),
+    ("resumed", "resumed"),
+)
 
-WORKER_STATE_CHOICES = (
-                            ('ready', 'ready'),
-                            ('busy', 'busy'),
-                        )
+WORKER_STATE_CHOICES = (("ready", "ready"), ("busy", "busy"))
+
 
 def as_dict(item):
     """
@@ -30,6 +28,7 @@ def as_dict(item):
     data = json.loads(json.dumps(item, sort_keys=True, cls=DjangoJSONEncoder))
 
     return data
+
 
 class Job(models.Model):
     """
@@ -44,6 +43,7 @@ class Job(models.Model):
     dt_updated = models.DateTimeField(auto_now=True)
     progress = models.TextField()
     validated = models.BooleanField(default=False)
+
 
 class Worker(models.Model):
     """

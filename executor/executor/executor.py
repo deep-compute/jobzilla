@@ -14,27 +14,29 @@ from kwikapi import Client
 from basescript import BaseScript
 from deeputil import AttrDict, Dummy, keeprunning
 
+
 class Executor:
 
     # State of the executor that it is ready for executing a job.
-    WREADY = 'ready'
+    WREADY = "ready"
 
     # State of the executor that it is executing a job
-    WBUSY = 'busy'
+    WBUSY = "busy"
 
     # Executor should always ask job from master at some interval
     JOB_INTERVAL = 10
 
     def __init__(
-                self,
-                url=None,
-                version=None,
-                protocol=None,
-                hostname=None,
-                external_inp_dir=None,
-                external_out_dir=None,
-                external_work_dir=None,
-                log=Dummy()):
+        self,
+        url=None,
+        version=None,
+        protocol=None,
+        hostname=None,
+        external_inp_dir=None,
+        external_out_dir=None,
+        external_work_dir=None,
+        log=Dummy(),
+    ):
         super().__init__()
 
         self.job_id = None
@@ -44,7 +46,7 @@ class Executor:
         self.remote_work_dir = external_work_dir
         self.hostname = hostname
         # FIXME:no hard coding for this
-        self.docker_tmp_dir = '/tmp/'
+        self.docker_tmp_dir = "/tmp/"
         self.state = self.WREADY
         self.progress = 0
         self.docker_client = None
@@ -72,14 +74,13 @@ class Executor:
         params = self.process_response(response)
         self.process_params(params)
 
-
     def request_job(self):
         """
         The executor will request for a job and,
         try to receive and process the response from the master.
         """
         time.sleep(self.JOB_INTERVAL)
-        self.log.info('request_job')
+        self.log.info("request_job")
         job_response = self.master.worker.get_job(name=self.hostname)
 
         return job_response
@@ -141,10 +142,10 @@ class Executor:
         """
 
         if not response:
-            self.log.info('no_job', worker_state=self.state)
+            self.log.info("no_job", worker_state=self.state)
 
         else:
-            self.log.info('job_received', worker_state=self.state)
+            self.log.info("job_received", worker_state=self.state)
             params = self._get_parameters(response)
             self.state = self.WBUSY
 
@@ -222,42 +223,42 @@ class Executor:
         >>>
         """
 
-        self.log.info('_handle_params', response=response)
-        self.job_id = job_id = response.get('id', '')
-        job_name = response.get('name', '')
-        preserve = response.get('preserve', '')
+        self.log.info("_handle_params", response=response)
+        self.job_id = job_id = response.get("id", "")
+        job_name = response.get("name", "")
+        preserve = response.get("preserve", "")
 
-        external = json.loads(response['parameters'])['external']
-        external_inp_dir = external.get('input', self.remote_inp_dir)
-        external_out_dir = external.get('output', self.remote_out_dir)
-        external_work_dir = external.get('workdir', self.remote_work_dir)
+        external = json.loads(response["parameters"])["external"]
+        external_inp_dir = external.get("input", self.remote_inp_dir)
+        external_out_dir = external.get("output", self.remote_out_dir)
+        external_work_dir = external.get("workdir", self.remote_work_dir)
 
-        docker_params = json.loads(response['parameters'])['docker']
-        docker_inp_dir = docker_params.get('input', '')
-        docker_out_dir = docker_params.get('output', '')
-        docker_work_dir = docker_params.get('workdir', '')
-        image_name = docker_params.get('image', '')
-        docker_cred = docker_params.get('credentials', '')
-        docker_env = docker_params.get('envs', {})
-        docker_args = docker_params.get('arguments', '')
+        docker_params = json.loads(response["parameters"])["docker"]
+        docker_inp_dir = docker_params.get("input", "")
+        docker_out_dir = docker_params.get("output", "")
+        docker_work_dir = docker_params.get("workdir", "")
+        image_name = docker_params.get("image", "")
+        docker_cred = docker_params.get("credentials", "")
+        docker_env = docker_params.get("envs", {})
+        docker_args = docker_params.get("arguments", "")
         # FIXME: docker arguments should also contain job_id if some process requires it.
         # FIXME: find a better way to implement it.
         params = {
-                    'job_id': job_id,
-                    'job_name': job_name,
-                    'preserve': preserve,
-                    'docker_inp_dir': docker_inp_dir,
-                    'docker_out_dir': docker_out_dir,
-                    'docker_work_dir': docker_work_dir,
-                    'image_name': image_name,
-                    'preserve': preserve,
-                    'remote_inp_dir': external_inp_dir,
-                    'remote_out_dir': external_out_dir,
-                    'remote_work_dir': external_work_dir,
-                    'docker_cred': docker_cred,
-                    'environment':docker_env,
-                    'arguments': docker_args,
-                }
+            "job_id": job_id,
+            "job_name": job_name,
+            "preserve": preserve,
+            "docker_inp_dir": docker_inp_dir,
+            "docker_out_dir": docker_out_dir,
+            "docker_work_dir": docker_work_dir,
+            "image_name": image_name,
+            "preserve": preserve,
+            "remote_inp_dir": external_inp_dir,
+            "remote_out_dir": external_out_dir,
+            "remote_work_dir": external_work_dir,
+            "docker_cred": docker_cred,
+            "environment": docker_env,
+            "arguments": docker_args,
+        }
 
         return AttrDict(params)
 
@@ -302,10 +303,10 @@ class Executor:
         self.log_dir = self._create_log_dir(p.remote_out_dir, self.job_id)
         tmp_dir = self._make_tmpdir(p, self.job_id)
         volumes = {
-                    p.remote_inp_dir:{'bind':p.docker_inp_dir, 'mode': 'rw'},
-                    p.remote_out_dir:{'bind':p.docker_out_dir, 'mode': 'rw'},
-                    p.remote_work_dir:{'bind':p.docker_work_dir, 'mode': 'rw'}
-                }
+            p.remote_inp_dir: {"bind": p.docker_inp_dir, "mode": "rw"},
+            p.remote_out_dir: {"bind": p.docker_out_dir, "mode": "rw"},
+            p.remote_work_dir: {"bind": p.docker_work_dir, "mode": "rw"},
+        }
 
         return p.image_name, volumes, p.arguments, tmp_dir
 
@@ -324,7 +325,9 @@ class Executor:
         Params Required
         """
         image, volumes, docker_cmd, tmp_dir = self._construct_docker_cmd(params)
-        self.run_docker(params.docker_cred, image, params.environment, volumes, docker_cmd)
+        self.run_docker(
+            params.docker_cred, image, params.environment, volumes, docker_cmd
+        )
         self._preserve_tmp_data(params.preserve, tmp_dir, params.remote_out_dir)
 
     def _docker_login(self, credentials):
@@ -341,42 +344,46 @@ class Executor:
 
         if credentials:
             self.docker_client = docker.from_env()
-            self.docker_client.login(username=credentials.username, password=credentials.password)
+            self.docker_client.login(
+                username=credentials.username, password=credentials.password
+            )
 
     def run_docker(self, cred, image, env, volumes, cmd):
         """
         Docker image needs to be executed after image is successfully pulled,
         and docker command is contructed based on the job parameters.
         """
-        self.log.info('run_docker', state=self.state)
+        self.log.info("run_docker", state=self.state)
         self._docker_login(cred)
         self.docker_client = docker.from_env()
         self.container_id = self.docker_client.containers.run(
-                                                image,
-                                                environment=env,
-                                                volumes=volumes,
-                                                command=cmd,
-                                                stderr=True,
-                                                detach=True,
-                                            )
+            image,
+            environment=env,
+            volumes=volumes,
+            command=cmd,
+            stderr=True,
+            detach=True,
+        )
         self.container_id.wait()
-        self.log.info('Stopping container')
+        self.log.info("Stopping container")
         self.container_id.stop()
-        self.log.info('container_stopped')
+        self.log.info("container_stopped")
 
         self.container_id.remove()
 
         self.container_id = None
-        self.log.info('container_removed')
+        self.log.info("container_removed")
 
         self.state = self.WREADY
 
-        self.log.info('docker_done', worker_state=self.state)
+        self.log.info("docker_done", worker_state=self.state)
 
     @keeprunning()
     def _get_container_stdout(self):
         if self.container_id:
-            self.container_stdout = self.container_id.logs(stdout=True, stderr=False).decode('utf-8', 'ignore')
+            self.container_stdout = self.container_id.logs(
+                stdout=True, stderr=False
+            ).decode("utf-8", "ignore")
 
     def _get_container_stdout_daemon(self):
         stdout = Thread(target=self._get_container_stdout)
@@ -388,7 +395,9 @@ class Executor:
     @keeprunning()
     def _get_container_stderr(self):
         if self.container_id:
-            self.container_stderr = self.container_id.logs(stdout=False, stderr=True).decode('utf-8', 'ignore')
+            self.container_stderr = self.container_id.logs(
+                stdout=False, stderr=True
+            ).decode("utf-8", "ignore")
 
     def _get_container_stderr_daemon(self):
         stderr = Thread(target=self._get_container_stderr)
@@ -400,8 +409,8 @@ class Executor:
     @keeprunning()
     def _write_stdout_stderr(self):
         if self.container_id:
-            stdout_f = open(os.path.join(self.log_dir, 'stdout'), 'w+')
-            stderr_f = open(os.path.join(self.log_dir, 'stderr'), 'w+')
+            stdout_f = open(os.path.join(self.log_dir, "stdout"), "w+")
+            stderr_f = open(os.path.join(self.log_dir, "stderr"), "w+")
             if self.container_stdout:
                 stdout_f.write(self.container_stdout)
             if self.container_stderr:
@@ -415,7 +424,7 @@ class Executor:
         return write
 
     def _create_log_dir(self, out_dir, job_id):
-        log_dir = os.path.join(out_dir, 'logs', repr(job_id))
+        log_dir = os.path.join(out_dir, "logs", repr(job_id))
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
@@ -450,9 +459,7 @@ class Executor:
         """
         Responsible for continuously getting the state of the job which is being executed
         """
-        self.job_state = self.master.worker.get_job_state(
-                                                    job_id=self.job_id,
-                                                )
+        self.job_state = self.master.worker.get_job_state(job_id=self.job_id)
 
     @keeprunning()
     def _handle_job_operations(self):
@@ -462,16 +469,16 @@ class Executor:
         which should be handled.
         """
 
-        if self.job_state == 'paused':
+        if self.job_state == "paused":
             self.container_id.pause()
 
-        if self.job_state == 'resumed':
+        if self.job_state == "resumed":
             self.container_id.unpause()
 
-        if self.job_state == 'cancelled':
-            #self.log.info('STOOOOOOOOOOOOPIN')
+        if self.job_state == "cancelled":
+            # self.log.info('STOOOOOOOOOOOOPIN')
             self.container_id.kill()
-            #self.log.info('STOPPPPPPPPPPPPPPPDDDDDDDDDD')
+            # self.log.info('STOPPPPPPPPPPPPPPPDDDDDDDDDD')
 
     def _handle_job_operations_daemon(self):
         job_operation = Thread(target=self._handle_job_operations)
@@ -486,14 +493,16 @@ class Executor:
 
         # FIXME: hardcoding
         # FIXME: progress.txt appended with job_id
-        progress = os.path.join(self.remote_work_dir,'progress.txt' + repr(self.job_id))
+        progress = os.path.join(
+            self.remote_work_dir, "progress.txt" + repr(self.job_id)
+        )
         if os.path.exists(progress):
             progress_f = open(progress)
             self._get_progress_update(progress_f)
             progress_f.close()
 
-        #self.log.info("removing progress file", job_state=self.job_state, state=self.state)
-        if self.state == self.WREADY or self.job_state == 'cancelled':
+        # self.log.info("removing progress file", job_state=self.job_state, state=self.state)
+        if self.state == self.WREADY or self.job_state == "cancelled":
             os.remove(progress)
 
     def _get_progress_update(self, f):
@@ -512,11 +521,11 @@ class Executor:
 
         while self.state != self.WREADY:
             update = f.readline()
-            #self.log.info("insidie _get_progress_update", state=self.state, update=update)
+            # self.log.info("insidie _get_progress_update", state=self.state, update=update)
 
             if not update:
                 if prev_update:
-                    self.log.info('progress_update', cur_update=prev_update)
+                    self.log.info("progress_update", cur_update=prev_update)
                     cur_update = prev_update
                     self._update_progress(cur_update)
                     prev_update = None
@@ -645,10 +654,7 @@ class Executor:
         irrespective of job being executed or not.
         """
 
-        self.master.worker.update_state(
-                                    job_id=self.job_id,
-                                    state=self.state
-                                )
+        self.master.worker.update_state(job_id=self.job_id, state=self.state)
 
     def _state_daemon(self):
         """
